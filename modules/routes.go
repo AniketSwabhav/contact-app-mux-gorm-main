@@ -10,6 +10,5 @@ func RegisterModuleRoutes(app *app.App) {
 	registerUserRoutes(app)
 	// registerContactRoutes(app)
 	// registerContactInfoRoutes(app)
-	// registerCredentialRoutes(app)
-
+	registerCredentialRoutes(app)
 }
