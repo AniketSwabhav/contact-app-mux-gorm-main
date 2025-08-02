@@ -4,6 +4,7 @@ import (
 	"errors"
 	"strings"
 
+	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -13,6 +14,8 @@ import (
 const cost = 10
 
 type Credentials struct {
+	gorm.Model
+	// CredentialID string `json:"CredentialID" gorm:"primary_key;type:varchar(100);not null;unique"`
 	Email    string `json:"Email" gorm:"unique;not null;type:varchar(100)"`
 	Password string `json:"Password" gorm:"not null;type:varchar(100)"`
 }
@@ -27,6 +30,7 @@ func CreateCredential(email string, password string) (*Credentials, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	// credentialId := uuid.New()
 
 	newCredential := &Credentials{
@@ -34,8 +38,6 @@ func CreateCredential(email string, password string) (*Credentials, error) {
 		Email:    email,
 		Password: string(hashedPassword),
 	}
-
-	// credentialStore[credentialId.String()] = newCredential
 
 	return newCredential, nil
 }
@@ -48,4 +50,19 @@ func hashPassword(password string) ([]byte, error) {
 	}
 
 	return hashedPassword, nil
+}
+
+func (c *Credentials) ValidateCredential() error {
+
+	if len(strings.TrimSpace(c.Email)) == 0 || len(strings.TrimSpace(c.Password)) == 0 {
+		return errors.New("invalid credentials")
+	}
+
+	return nil
+}
+
+func CheckPassword(userPassword string, inputPassword string) error {
+
+	return bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(inputPassword))
+
 }

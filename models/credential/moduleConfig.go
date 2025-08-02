@@ -24,9 +24,5 @@ func (c *CredentialModuleConfig) MigrateTables() {
 	if err != nil {
 		log.NewLog().Print("Auto Migrating Credential ==> %s", err)
 	}
-}
 
-// type Credentials struct {
-// 	Email    string `json:"Email" gorm:"unique;not null;type:varchar(100)"`
-// 	Password string `json:"Password" gorm:"not null;type:varchar(100)"`
-// }
+}

@@ -25,14 +25,8 @@ func (c *ContactInfoModuleConfig) MigrateTables() {
 		log.NewLog().Print("Auto Migrating ContactInfo ==> %s", err)
 	}
 
-	err = c.DB.Model(model).AddForeignKey("contact_id", "contacts(user_id)", "CASCADE", "CASCADE").Error
+	err = c.DB.Model(model).AddForeignKey("contact_id", "contacts(contact_id)", "CASCADE", "CASCADE").Error
 	if err != nil {
 		log.NewLog().Print("Foreign Key Constraints Of ContactDetail ==> %s", err)
 	}
 }
-
-// type ContactDetail struct {
-// 	ContactID      uint        `json:"ContactID"`
-// 	TypeOfContact  string      `json:"Type" gorm:"not null;type:varchar(100)"`
-// 	ValueOfContact interface{} `json:"value" gorm:"not null;type:varchar(100)"`
-// }

@@ -129,11 +129,9 @@ func (app *App) Stop() {
 	context, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
 	defer cancel()
 
-	// Closing db
 	app.DB.Close()
 	app.Log.Print("Db closed")
 
-	// Stops Server
 	err := app.Server.Shutdown(context)
 	if err != nil {
 		app.Log.Print("Failed to Stop Server")

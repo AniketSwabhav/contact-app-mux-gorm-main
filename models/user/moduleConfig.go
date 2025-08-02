@@ -24,15 +24,9 @@ func (u *UserModuleConfig) MigrateTables() {
 	if err != nil {
 		log.NewLog().Print("Auto Migrating User ==> %s", err)
 	}
-}
 
-// type User struct {
-// 	gorm.Model
-// 	FirstName     string                  `json:"FirstName" gorm:"not null;type:varchar(100)"`
-// 	LastName      string                  `json:"LastName" gorm:"not null;type:varchar(100)"`
-// 	IsAdmin       bool                    `json:"IsAdmin" gorm:"type:boolean;default:false"`
-// 	IsActive      bool                    `json:"IsActive" gorm:"type:boolean;default:true"`
-// 	CredentialsID uint                    `json:"CredentialsID"`
-// 	Credentials   *credential.Credentials `gorm:"foreignKey:CredentialsID"`
-// 	Contacts      []contact.Contact       `gorm:"foreignKey:UserID"`
-// }
+	// err = u.DB.Model(model).AddForeignKey("credentials_id", "credentials(credential_id)", "CASCADE", "CASCADE").Error
+	// if err != nil {
+	// 	log.NewLog().Print("Foreign Key Constraint User -> Credential ==> %s", err)
+	// }
+}
