@@ -35,3 +35,19 @@ func CreateAdmin(fName, lName string, credential *credential.Credentials) *User 
 
 	return user
 }
+
+func CreateUser(fName, lName string, credential *credential.Credentials) *User {
+
+	id := uuid.New()
+
+	user := &User{
+		UserID:      id.String(),
+		FirstName:   fName,
+		LastName:    lName,
+		IsAdmin:     false,
+		IsActive:    true,
+		Credentials: credential,
+	}
+
+	return user
+}

@@ -32,6 +32,8 @@ func RespondError(w http.ResponseWriter, err error) {
 		RespondJSON(w, typedErr.HTTPStatus, typedErr)
 	case *apperror.ValidationError:
 		RespondJSON(w, typedErr.HTTPStatus, typedErr)
+	case *apperror.DatabaseError:
+		RespondJSON(w, typedErr.HTTPStatus, typedErr)
 	case *apperror.AppError:
 		RespondJSON(w, typedErr.HTTPStatus, typedErr)
 	default:

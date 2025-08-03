@@ -67,7 +67,7 @@ func (a *App) Init() {
 func (a *App) initializeRouter() {
 	a.Log.Print("Initializing " + a.Name + " Route")
 	a.Router = mux.NewRouter().StrictSlash(true)
-	a.Router = a.Router.PathPrefix("/api/v1/contact-app").Subrouter()
+	a.Router = a.Router.PathPrefix("/contact-app").Subrouter()
 }
 
 func (a *App) initializeServer() {
@@ -80,7 +80,7 @@ func (a *App) initializeServer() {
 	})
 
 	a.Server = &http.Server{
-		Addr:         "localhost:4002",
+		Addr:         "localhost:2611",
 		ReadTimeout:  time.Second * 60,
 		WriteTimeout: time.Second * 60,
 		IdleTimeout:  time.Second * 60,

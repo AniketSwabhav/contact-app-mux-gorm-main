@@ -16,3 +16,23 @@ func NewDatabaseError(msg string) *DatabaseError {
 		Type: "DATABASE_ERROR",
 	}
 }
+
+func NewNotFoundError(msg string) *DatabaseError {
+	return &DatabaseError{
+		AppError: AppError{
+			Message:    msg,
+			HTTPStatus: http.StatusNotFound,
+		},
+		Type: "NOT_FOUND_ERROR",
+	}
+}
+
+func NewDuplicateEntryError(msg string) *DatabaseError {
+	return &DatabaseError{
+		AppError: AppError{
+			Message:    msg,
+			HTTPStatus: http.StatusNotFound,
+		},
+		Type: "DUPLICATE_ENTRY",
+	}
+}
