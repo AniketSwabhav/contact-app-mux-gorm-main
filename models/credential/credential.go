@@ -2,6 +2,7 @@ package credential
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 
 	"github.com/jinzhu/gorm"
@@ -23,12 +24,12 @@ type Credentials struct {
 func CreateCredential(email string, password string) (*Credentials, error) {
 
 	if len(strings.TrimSpace(email)) == 0 || len(strings.TrimSpace(password)) == 0 {
-		return nil, errors.New("credentials cannot be empty")
+		return nil, errors.New("email or password cannot be empty")
 	}
 
 	hashedPassword, err := hashPassword(password)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to hash password: %w", err)
 	}
 
 	// credentialId := uuid.New()
@@ -40,16 +41,6 @@ func CreateCredential(email string, password string) (*Credentials, error) {
 	}
 
 	return newCredential, nil
-}
-
-func hashPassword(password string) ([]byte, error) {
-
-	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)
-	if err != nil {
-		return nil, err
-	}
-
-	return hashedPassword, nil
 }
 
 func (c *Credentials) ValidateCredential() error {
@@ -65,4 +56,15 @@ func CheckPassword(userPassword string, inputPassword string) error {
 
 	return bcrypt.CompareHashAndPassword([]byte(userPassword), []byte(inputPassword))
 
+}
+
+func hashPassword(password string) ([]byte, error) {
+
+	// hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// return hashedPassword, nil
+
+	return bcrypt.GenerateFromPassword([]byte(password), cost)
 }

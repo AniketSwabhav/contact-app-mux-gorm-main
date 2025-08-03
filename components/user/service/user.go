@@ -1,9 +1,11 @@
 package service
 
 import (
+	"contact_app_mux_gorm_main/components/apperror"
 	"contact_app_mux_gorm_main/models/credential"
 	"contact_app_mux_gorm_main/models/user"
 	"errors"
+	"strings"
 
 	"github.com/jinzhu/gorm"
 )
@@ -20,15 +22,37 @@ func NewUserService(DB *gorm.DB) *UserService {
 
 func (u *UserService) CreateAdmin(fname, lname, email, password string) (*user.User, error) {
 
+	if strings.TrimSpace(fname) == "" {
+		return nil, apperror.NewMissingFieldsError("first name is required")
+	}
+
+	if strings.TrimSpace(lname) == "" {
+		return nil, apperror.NewMissingFieldsError("last name is required")
+	}
+
+	if strings.TrimSpace(email) == "" {
+		return nil, apperror.NewMissingFieldsError("email is required")
+	}
+
+	if strings.TrimSpace(password) == "" {
+		return nil, apperror.NewMissingFieldsError("password is required")
+	}
+
+	var existing credential.Credentials
+	if err := u.db.Where("email = ?", email).First(&existing).Error; err == nil {
+		return nil, apperror.NewValidationError("DUPLICATE_EMAIL", "Email already in use")
+	}
+
 	foundUser, err := credential.CreateCredential(email, password)
 	if err != nil {
-		return nil, err
+		return nil, apperror.NewValidationError("INVALID_CREDENTIAL", err.Error())
 	}
+
 	user := user.CreateAdmin(fname, lname, foundUser)
 
 	err = u.db.Create(user).Error
 	if err != nil {
-		return nil, err
+		return nil, apperror.NewDatabaseError("Failed to create admin user")
 	}
 
 	return user, nil

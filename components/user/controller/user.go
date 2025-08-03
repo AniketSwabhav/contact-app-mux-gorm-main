@@ -1,9 +1,11 @@
 package controller
 
 import (
+	"contact_app_mux_gorm_main/components/apperror"
 	"contact_app_mux_gorm_main/components/log"
 	"contact_app_mux_gorm_main/components/security/middleware/authorization"
 	"contact_app_mux_gorm_main/components/user/service"
+	"contact_app_mux_gorm_main/components/util"
 	"contact_app_mux_gorm_main/models/credential"
 	"encoding/json"
 	"net/http"
@@ -34,11 +36,12 @@ type UserInput struct {
 
 func (c *UserController) RegisterRoutes(router *mux.Router) {
 	userRouter := router.PathPrefix("/user").Subrouter()
-	// guardedRouter := userRouter.PathPrefix("/").Subrouter()
+	guardedRouter := userRouter.PathPrefix("/").Subrouter()
 	unguardedRouter := userRouter.PathPrefix("/").Subrouter()
 
 	unguardedRouter.HandleFunc("/register-admin", c.registerAdmin).Methods(http.MethodPost)
 	unguardedRouter.HandleFunc("/login", c.login).Methods(http.MethodPost)
+	guardedRouter.HandleFunc("/register", c.registerUser).Methods(http.MethodPost)
 }
 
 func (c *UserController) registerAdmin(w http.ResponseWriter, r *http.Request) {
@@ -46,18 +49,21 @@ func (c *UserController) registerAdmin(w http.ResponseWriter, r *http.Request) {
 	var userInput *UserInput
 	err := json.NewDecoder(r.Body).Decode(&userInput)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadRequest)
+		apperr := apperror.NewInvalidJSONError("Invalid JSON input")
+		util.RespondError(w, apperr)
 		return
 	}
 
 	createdUser, err := c.service.CreateAdmin(userInput.FirstName, userInput.LastName, userInput.Email, userInput.Password)
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusInternalServerError)
+		util.RespondError(w, err)
 		return
 	}
 
-	w.WriteHeader(http.StatusCreated)
-	json.NewEncoder(w).Encode(createdUser)
+	// w.WriteHeader(http.StatusCreated)
+	// json.NewEncoder(w).Encode(createdUser)
+
+	util.RespondJSON(w, http.StatusCreated, createdUser)
 }
 
 func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
@@ -91,7 +97,7 @@ func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
 
 	token, err := claim.Coder()
 	if err != nil {
-		http.Error(w, err.Error(), http.StatusBadGateway)
+		util.RespondError(w, apperror.NewValidationError("TOKEN_CREATION_FAILED", "Could not create token"))
 		return
 	}
 
@@ -100,6 +106,7 @@ func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
 		Value: token,
 	})
 
-	w.WriteHeader(http.StatusAccepted)
-	json.NewEncoder(w).Encode(foundUser)
+	// w.WriteHeader(http.StatusAccepted)
+	// json.NewEncoder(w).Encode(foundUser)
+	util.RespondJSON(w, http.StatusAccepted, foundUser)
 }
