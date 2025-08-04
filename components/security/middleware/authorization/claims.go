@@ -10,7 +10,7 @@ import (
 var secretKey = []byte("goTeam")
 
 type Claims struct {
-	UserID   uint
+	UserID   string
 	IsAdmin  bool
 	IsActive bool
 	jwt.StandardClaims

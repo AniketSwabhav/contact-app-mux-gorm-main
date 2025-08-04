@@ -119,7 +119,7 @@ func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
 	}
 
 	claim := &authorization.Claims{
-		UserID:   foundUser.ID,
+		UserID:   foundUser.UserID,
 		IsAdmin:  foundUser.IsAdmin,
 		IsActive: foundUser.IsActive,
 		StandardClaims: jwt.StandardClaims{

@@ -8,7 +8,7 @@ func RegisterModuleRoutes(app *app.App) {
 	log.Print("============Registering-Module-Routes==============")
 
 	registerUserRoutes(app)
-	// registerContactRoutes(app)
+	registerContactRoutes(app)
 	// registerContactInfoRoutes(app)
 	registerCredentialRoutes(app)
 }

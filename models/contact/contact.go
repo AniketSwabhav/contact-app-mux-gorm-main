@@ -2,6 +2,8 @@ package contact
 
 import (
 	"contact_app_mux_gorm_main/models/contactdetail"
+
+	"github.com/google/uuid"
 )
 
 type Contact struct {
@@ -12,3 +14,24 @@ type Contact struct {
 	UserID         string                         `json:"UserID" gorm:"type:varchar(100);not null"`
 	ContactDetails []*contactdetail.ContactDetail `gorm:"foreignKey:ContactID;references:ContactID"`
 }
+
+func CreateContact(firstName, lastName, userId string) *Contact {
+
+	id := uuid.New()
+	contact := &Contact{
+		ContactID: id.String(),
+		FirstName: firstName,
+		LastName:  lastName,
+		IsActive:  true,
+		UserID:    userId,
+	}
+
+	return contact
+}
+
+// func (c *Contact) Update(firstName, lastName string) error {
+// 	c.FirstName = firstName
+// 	c.LastName = lastName
+
+// 	return nil
+// }
