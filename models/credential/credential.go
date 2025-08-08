@@ -1,12 +1,11 @@
 package credential
 
 import (
-	"github.com/jinzhu/gorm"
+	"contact_app_mux_gorm_main/models"
 )
 
 type Credentials struct {
-	gorm.Model
-	// CredentialID string `json:"CredentialID" gorm:"primary_key;type:varchar(100);not null;unique"`
+	models.Base
 	Email    string `json:"Email" gorm:"unique;not null;type:varchar(100)"`
 	Password string `json:"Password" gorm:"not null;type:varchar(100)"`
 }

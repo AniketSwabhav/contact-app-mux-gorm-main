@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"github.com/google/uuid"
 	"github.com/jinzhu/gorm"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -36,7 +35,7 @@ func (service *UserService) CreateAdmin(newUser *user.User) error {
 	uow := repository.NewUnitOfWork(service.db, false)
 	defer uow.RollBack()
 
-	newUser.UserID = uuid.New().String()
+	// newUser.UserID = uuid.New().String()
 	newUser.IsAdmin = true
 
 	credential := credential.Credentials{
@@ -71,7 +70,7 @@ func (service *UserService) CreateUser(newUser *user.User) error {
 	uow := repository.NewUnitOfWork(service.db, false)
 	defer uow.RollBack()
 
-	newUser.UserID = uuid.New().String()
+	// newUser.UserID = uuid.New().String()
 
 	credential := credential.Credentials{
 		Email:    newUser.Credentials.Email,
@@ -126,7 +125,7 @@ func (service *UserService) Login(userCredential *credential.Credentials, claim 
 	}
 
 	*claim = authorization.Claims{
-		UserID:   foundUser.UserID,
+		UserID:   foundUser.ID,
 		IsAdmin:  foundUser.IsAdmin,
 		IsActive: foundUser.IsActive,
 		StandardClaims: jwt.StandardClaims{
@@ -151,9 +150,9 @@ func (u *UserService) FindCredential(email string) (*user.User, *credential.Cred
 		return nil, nil, apperror.NewNotFoundError("Invalid credentials_id")
 	}
 
-	if foundUser.ID == 0 {
-		return nil, nil, apperror.NewNotFoundError("user does not exists")
-	}
+	// if foundUser.ID == 0 {
+	// 	return nil, nil, apperror.NewNotFoundError("user does not exists")
+	// }
 
 	return &foundUser, &foundCredential, nil
 }

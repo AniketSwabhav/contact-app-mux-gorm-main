@@ -5,12 +5,13 @@ import (
 	"net/http"
 
 	"github.com/golang-jwt/jwt"
+	uuid "github.com/satori/go.uuid"
 )
 
 var secretKey = []byte("goTeam")
 
 type Claims struct {
-	UserID   string
+	UserID   uuid.UUID
 	IsAdmin  bool
 	IsActive bool
 	jwt.StandardClaims
