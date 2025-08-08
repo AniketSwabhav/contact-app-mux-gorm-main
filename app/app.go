@@ -2,6 +2,7 @@ package app
 
 import (
 	"contact_app_mux_gorm_main/components/log"
+	"contact_app_mux_gorm_main/modules/repository"
 	"context"
 	"net/http"
 	"os"
@@ -22,6 +23,9 @@ type App struct {
 	DB     *gorm.DB
 	Log    log.Log
 	Server *http.Server
+	WG     *sync.WaitGroup
+
+	Repository repository.Repository
 }
 
 type Controller interface {
@@ -32,11 +36,14 @@ type ModuleConfig interface {
 	MigrateTables()
 }
 
-func NewApp(name string, db *gorm.DB, log log.Log) *App {
+func NewApp(name string, db *gorm.DB, log log.Log,
+	wg *sync.WaitGroup, repo repository.Repository) *App {
 	return &App{
-		Name: name,
-		DB:   db,
-		Log:  log,
+		Name:       name,
+		DB:         db,
+		Log:        log,
+		WG:         wg,
+		Repository: repo,
 	}
 }
 

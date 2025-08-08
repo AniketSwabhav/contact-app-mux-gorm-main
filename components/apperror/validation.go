@@ -36,3 +36,13 @@ func NewValidationError(errType, msg string) *ValidationError {
 		Type: errType,
 	}
 }
+
+func NewHTTPError(msg string) *ValidationError {
+	return &ValidationError{
+		AppError: AppError{
+			Message:    msg,
+			HTTPStatus: http.StatusBadRequest,
+		},
+		Type: "HTTP_ERROR",
+	}
+}

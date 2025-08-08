@@ -4,8 +4,10 @@ import (
 	"contact_app_mux_gorm_main/app"
 	"contact_app_mux_gorm_main/components/log"
 	"contact_app_mux_gorm_main/modules"
+	"contact_app_mux_gorm_main/modules/repository"
 	"os"
 	"os/signal"
+	"sync"
 	"syscall"
 )
 
@@ -22,11 +24,15 @@ func main() {
 		log.Print("DB connection closed")
 	}()
 
-	app := app.NewApp("Contact App", db, *log)
+	var wg sync.WaitGroup
+	var repository = repository.NewGormRepository()
+
+	app := app.NewApp("Contact App", db, *log,
+		&wg, repository)
 
 	app.Init()
 
-	modules.RegisterModuleRoutes(app)
+	modules.RegisterModuleRoutes(app, repository)
 
 	go func() {
 		err := app.StartServer()
