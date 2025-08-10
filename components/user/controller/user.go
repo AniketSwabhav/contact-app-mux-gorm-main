@@ -9,9 +9,11 @@ import (
 	"contact_app_mux_gorm_main/components/util"
 	"contact_app_mux_gorm_main/models/credential"
 	"contact_app_mux_gorm_main/models/user"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
+	uuid "github.com/satori/go.uuid"
 )
 
 type UserController struct {
@@ -28,13 +30,6 @@ func NewUserController(credentialService *credentialService.CredentialService, u
 	}
 }
 
-// type UserInput struct {
-// 	FirstName string
-// 	LastName  string
-// 	Email     string
-// 	Password  string
-// }
-
 func (c *UserController) RegisterRoutes(router *mux.Router) {
 
 	userRouter := router.PathPrefix("/user").Subrouter()
@@ -48,15 +43,14 @@ func (c *UserController) RegisterRoutes(router *mux.Router) {
 	guardedRouter.HandleFunc("/register", c.registerUser).Methods(http.MethodPost)
 
 	// //Get
-	// guardedRouter.HandleFunc("/", c.getAllUsers).Methods(http.MethodGet)
-	// guardedRouter.HandleFunc("/get5", c.getUsersPaginated).Methods(http.MethodGet)
-	// guardedRouter.HandleFunc("/{id}", c.getUserById).Methods(http.MethodGet)
+	guardedRouter.HandleFunc("/", c.getAllUsers).Methods(http.MethodGet)
+	guardedRouter.HandleFunc("/{id}", c.getUserById).Methods(http.MethodGet)
 
 	// //Update
-	// guardedRouter.HandleFunc("/{id}", c.updateUserById).Methods(http.MethodPut)
+	guardedRouter.HandleFunc("/{id}", c.updateUserById).Methods(http.MethodPut)
 
 	// //Delete
-	// guardedRouter.HandleFunc("/{id}", c.deleteUserById).Methods(http.MethodDelete)
+	guardedRouter.HandleFunc("/{id}", c.deleteUserById).Methods(http.MethodDelete)
 
 	guardedRouter.Use(util.MiddlewareAdmin)
 }
@@ -130,89 +124,97 @@ func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
 	})
 }
 
-// func (c *UserController) getAllUsers(w http.ResponseWriter, _ *http.Request) {
+func (controller *UserController) getAllUsers(w http.ResponseWriter, r *http.Request) {
+	allUsers := &[]user.UserDTO{}
+	var totalCount int
+	err := controller.UserService.GetAllUsers(allUsers, &totalCount)
+	if err != nil {
+		controller.log.Print(err.Error())
+		util.RespondError(w, err)
+		return
+	}
+	util.RespondJSONWithXTotalCount(w, http.StatusOK, totalCount, allUsers)
+}
 
-// 	allUsers, err := c.service.GetAllUsers()
-// 	if err != nil {
-// 		util.RespondError(w, err)
-// 		return
-// 	}
+func (c *UserController) getUserById(w http.ResponseWriter, r *http.Request) {
 
-// 	util.RespondJSON(w, http.StatusAccepted, allUsers)
-// }
+	var targetUser = &user.UserDTO{}
 
-// func (c *UserController) getUsersPaginated(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	userIdFromURL := vars["id"]
 
-// 	query := r.URL.Query()
+	userUUID, err := uuid.FromString(userIdFromURL)
+	if err != nil {
+		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
+		return
+	}
 
-// 	pageStr := query.Get("page")
-// 	pageSizeStr := query.Get("limit")
+	targetUser.ID = userUUID
 
-// 	page := 1
-// 	pageSize := 5
+	err = c.UserService.GetUserByID(targetUser)
+	if err != nil {
+		util.RespondError(w, err)
+		return
+	}
 
-// 	if pageStr != "" {
-// 		if parsedPage, err := strconv.Atoi(pageStr); err == nil && parsedPage > 0 {
-// 			page = parsedPage
-// 		}
-// 	}
+	util.RespondJSON(w, http.StatusOK, targetUser)
+}
 
-// 	if pageSizeStr != "" {
-// 		if parsedLimit, err := strconv.Atoi(pageSizeStr); err == nil && parsedLimit > 0 {
-// 			pageSize = parsedLimit
-// 		}
-// 	}
+func (c *UserController) updateUserById(w http.ResponseWriter, r *http.Request) {
 
-// 	users, err := c.service.GetUsersPaginated(page, pageSize)
-// 	if err != nil {
-// 		util.RespondError(w, err)
-// 		return
-// 	}
+	var userToUpdate = user.User{}
 
-// 	util.RespondJSON(w, http.StatusAccepted, users)
-// }
+	err := util.UnmarshalJSON(r, &userToUpdate)
+	if err != nil {
+		fmt.Println("==============================err from UnmarshalJSON==========================")
+		c.log.Print(err.Error())
+		util.RespondError(w, apperror.NewHTTPError(err.Error()))
+		return
+	}
+	vars := mux.Vars(r)
+	userIdFromURL := vars["id"]
 
-// func (c *UserController) getUserById(w http.ResponseWriter, r *http.Request) {
+	userUUID, err := uuid.FromString(userIdFromURL)
+	if err != nil {
+		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
+		return
+	}
 
-// 	vars := mux.Vars(r)
-// 	userIdFromURL := vars["id"]
+	userToUpdate.ID = userUUID
 
-// 	foundUser, err := c.service.Get(userIdFromURL)
-// 	if err != nil {
-// 		util.RespondError(w, err)
-// 		return
-// 	}
+	err = c.UserService.UpdateUser(&userToUpdate)
+	if err != nil {
+		c.log.Print(err.Error())
+		util.RespondError(w, err)
+		return
+	}
 
-// 	util.RespondJSON(w, http.StatusOK, foundUser)
-// }
+	util.RespondJSON(w, http.StatusOK, userToUpdate)
+}
 
-// func (c *UserController) updateUserById(w http.ResponseWriter, r *http.Request) {
+func (c *UserController) deleteUserById(w http.ResponseWriter, r *http.Request) {
 
-// 	vars := mux.Vars(r)
-// 	userIdFromURL := vars["id"]
+	userToDelete := user.User{}
 
-// 	var user *UserInput
-// 	json.NewDecoder(r.Body).Decode(&user)
-// 	targetUser, err := c.service.Update(userIdFromURL, user.FirstName, user.LastName, user.Email)
-// 	if err != nil {
-// 		util.RespondError(w, err)
-// 		return
-// 	}
+	vars := mux.Vars(r)
+	userIdFromURL := vars["id"]
 
-// 	util.RespondJSON(w, http.StatusOK, targetUser)
-// }
+	userUUID, err := uuid.FromString(userIdFromURL)
+	if err != nil {
+		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
+		return
+	}
 
-// func (c *UserController) deleteUserById(w http.ResponseWriter, r *http.Request) {
-// 	vars := mux.Vars(r)
-// 	userIdFromURL := vars["id"]
+	userToDelete.ID = userUUID
 
-// 	err := c.service.Delete(userIdFromURL)
-// 	if err != nil {
-// 		util.RespondError(w, err)
-// 		return
-// 	}
+	err = c.UserService.Delete(&userToDelete)
+	if err != nil {
+		c.log.Print(err.Error())
+		util.RespondError(w, err)
+		return
+	}
 
-// 	util.RespondJSON(w, http.StatusOK, map[string]string{
-// 		"message": "User deleted successfully",
-// 	})
-// }
+	util.RespondJSON(w, http.StatusOK, map[string]string{
+		"message": "User deleted successfully",
+	})
+}

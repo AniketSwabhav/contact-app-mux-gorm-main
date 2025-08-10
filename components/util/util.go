@@ -4,6 +4,7 @@ import (
 	"contact_app_mux_gorm_main/components/apperror"
 	"encoding/json"
 	"net/http"
+	"strconv"
 )
 
 func RespondErrorMessage(w http.ResponseWriter, code int, msg string) {
@@ -39,4 +40,22 @@ func RespondError(w http.ResponseWriter, err error) {
 	default:
 		RespondErrorMessage(w, http.StatusInternalServerError, "Unexpected error: "+err.Error())
 	}
+}
+
+func RespondJSONWithXTotalCount(w http.ResponseWriter, code int, count int, payload interface{}) {
+	response, err := json.Marshal(payload)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		w.Write([]byte(err.Error()))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	SetNewHeader(w, "X-Total-Count", strconv.Itoa(count))
+	w.WriteHeader(code)
+	w.Write([]byte(response))
+}
+
+func SetNewHeader(w http.ResponseWriter, headerName, value string) {
+	w.Header().Add("Access-Control-Expose-Headers", headerName)
+	w.Header().Set(headerName, value)
 }

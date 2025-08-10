@@ -4,10 +4,16 @@ import (
 	"contact_app_mux_gorm_main/components/apperror"
 
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 type Repository interface {
 	Add(uow *UnitOfWork, out interface{}) error
+	GetAll(uow *UnitOfWork, out interface{}, queryProcessor ...QueryProcessor) error
+	GetCount(uow *UnitOfWork, out, count interface{}, queryProcessors ...QueryProcessor) error
+	GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error
+	Save(uow *UnitOfWork, value interface{}) error
+	UpdateWithMap(uow *UnitOfWork, model interface{}, value map[string]interface{}, queryProcessors ...QueryProcessor) error
 }
 
 type GormRepository struct{}
@@ -56,9 +62,62 @@ func (repository *GormRepository) Add(uow *UnitOfWork, out interface{}) error {
 	return uow.DB.Create(out).Error
 }
 
+func (repository *GormRepository) Save(uow *UnitOfWork, value interface{}) error {
+	return uow.DB.Debug().Save(value).Error
+}
+
+func (repository *GormRepository) UpdateWithMap(uow *UnitOfWork, model interface{}, value map[string]interface{},
+	queryProcessors ...QueryProcessor) error {
+	db := uow.DB
+	db, err := executeQueryProcessors(db, value, queryProcessors...)
+	if err != nil {
+		return err
+	}
+	return db.Debug().Model(model).Update(value).Error
+}
+
+func (repository *GormRepository) GetAll(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error {
+	db := uow.DB
+	db, err := executeQueryProcessors(db, out, queryProcessors...)
+	if err != nil {
+		return err
+	}
+	return db.Debug().Find(out).Error
+}
+
+func (repository *GormRepository) GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error {
+	// #tenantID should be the first element in slice if "where" is appeneded in QP.
+	queryProcessors = append([]QueryProcessor{Filter("id = ?", tenantID)}, queryProcessors...)
+	return repository.GetRecord(uow, out, queryProcessors...)
+}
+
+func (repository *GormRepository) GetRecord(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error {
+	db := uow.DB
+	db, err := executeQueryProcessors(db, out, queryProcessors...)
+	if err != nil {
+		return err
+	}
+	return db.Debug().First(out).Error
+}
+
+func Select(query interface{}, args ...interface{}) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		db = db.Select(query, args...)
+		return db, nil
+	}
+}
+
+func PreloadAssociations(preloadAssociations []string) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		for _, association := range preloadAssociations {
+			db = db.Debug().Preload(association)
+		}
+		return db, nil
+	}
+}
+
 func (uow *UnitOfWork) RollBack() {
-	// This condition can be used if Rollback() is defered as soon as UOW is created.
-	// So we only rollback if it's not committed.
+
 	if !uow.Committed && !uow.Readonly {
 		uow.DB.Rollback()
 	}
@@ -75,6 +134,13 @@ func Filter(condition string, args ...interface{}) QueryProcessor {
 	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
 		db = db.Debug().Where(condition, args...)
 		return db, nil
+	}
+}
+
+func CombineQueries(queryProcessors []QueryProcessor) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		tempDB, err := executeQueryProcessors(db, out, queryProcessors...)
+		return tempDB, err
 	}
 }
 
@@ -98,10 +164,86 @@ func DoesEmailExist(db *gorm.DB, email string, out interface{}, queryProcessors 
 	return false, nil
 }
 
-// func MatchPassword(db *gorm.DB, password string, out interface{}, queryProcessors ...QueryProcessor) (bool, error) {
+func DoesRecordExistForUser(db *gorm.DB, userID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) (bool, error) {
+	if userID == uuid.Nil {
+		return false, apperror.NewValidationError("INVALID_ID", "DoesRecordExistForTenant")
+	}
+	count := 0
+	// Below comment would make the tenant check before all query processor (Uncomment only if needed in future)
+	// queryProcessors = append([]QueryProcessor{Filter("tenant_id = ?", tenantID)},queryProcessors... )
+	db, err := executeQueryProcessors(db, out, queryProcessors...)
+	if err != nil {
+		return false, err
+	}
+	if err := db.Debug().Model(out).Where("id = ?", userID).Count(&count).Error; err != nil {
+		return false, err
+	}
+	if count > 0 {
+		return true, nil
+	}
+	return false, nil
+}
+
+// func DoesUserIDExists(db *gorm.DB, userId string, out interface{}, queryProcessors ...QueryProcessor) (bool, error) {
+// 	if userId == "" {
+// 		return false, apperror.NewNotFoundError("UserId not present")
+// 	}
+// 	count := 0
+// 	// Below comment would make the tenant check before all query processor (Uncomment only if needed in future)
+// 	// queryProcessors = append([]QueryProcessor{Filter("tenant_id = ?", tenantID)},queryProcessors... )
 // 	db, err := executeQueryProcessors(db, out, queryProcessors...)
 // 	if err != nil {
 // 		return false, err
 // 	}
-// 	return true, nil
+// 	if err := db.Debug().Model(out).Where("id = ?", userId).Count(&count).Error; err != nil {
+// 		return false, err
+// 	}
+// 	if count > 0 {
+// 		return true, nil
+// 	}
+// 	return false, nil
 // }
+
+func Limit(limit interface{}) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		db = db.Limit(limit)
+		return db, nil
+	}
+}
+
+func Offset(offset interface{}) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		db = db.Offset(offset)
+		return db, nil
+	}
+}
+
+func (repository *GormRepository) GetCount(uow *UnitOfWork, out, count interface{}, queryProcessors ...QueryProcessor) error {
+	db := uow.DB
+	db, err := executeQueryProcessors(db, out, queryProcessors...)
+	if err != nil {
+		return err
+	}
+	return db.Debug().Model(out).Count(count).Error
+}
+
+func Paginate(limit, offset int, totalCount *int) QueryProcessor {
+	return func(db *gorm.DB, out interface{}) (*gorm.DB, error) {
+		if out != nil {
+			if totalCount != nil {
+				if err := db.Model(out).Count(totalCount).Error; err != nil {
+					return db, err
+				}
+			}
+		}
+
+		if limit != -1 {
+			db = db.Limit(limit)
+		}
+
+		if offset > 0 {
+			db = db.Offset(limit * offset)
+		}
+		return db, nil
+	}
+}

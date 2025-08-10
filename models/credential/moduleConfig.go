@@ -25,4 +25,9 @@ func (c *CredentialModuleConfig) MigrateTables() {
 		log.NewLog().Print("Auto Migrating Credential ==> %s", err)
 	}
 
+	err = c.DB.Model(model).AddForeignKey("user_id", "users(id)", "CASCADE", "CASCADE").Error
+	if err != nil {
+		log.NewLog().Print("Foreign Key Constraints Of credentials ==> %s", err)
+	}
+
 }

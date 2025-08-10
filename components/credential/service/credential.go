@@ -42,6 +42,11 @@ func (c *CredentialService) CreateCredential(credential *credential.Credentials)
 		return apperror.NewDatabaseError("Error creating credentials")
 	}
 
+	// err = CredentialService.Add(uow, newUser)
+	// if err != nil {
+	// 	return apperror.NewDatabaseError("Failed to create admin user")
+	// }
+
 	return nil
 }
 
