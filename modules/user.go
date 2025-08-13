@@ -10,6 +10,8 @@ import (
 
 func registerUserRoutes(appObj *app.App, repository repository.Repository) {
 
+	defer appObj.WG.Done()
+
 	credentialService := credentialService.NewCredentialService(appObj.DB, repository)
 	userService := userService.NewUserService(appObj.DB, repository)
 

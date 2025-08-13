@@ -1,7 +1,7 @@
 package authorization
 
 import (
-	"errors"
+	"contact_app_mux_gorm_main/components/apperror"
 	"net/http"
 
 	"github.com/golang-jwt/jwt"
@@ -22,33 +22,71 @@ func (c *Claims) Coder() (string, error) {
 	return token.SignedString(secretKey)
 }
 
-func ValidateToken(_ http.ResponseWriter, r *http.Request) (*Claims, error) {
+func ValidateToken(_ http.ResponseWriter, r *http.Request, claim *Claims) error {
 
 	authCookie, err := r.Cookie("auth")
-	tokenString := authCookie.Value
 	if err != nil {
-		return nil, err
+		return apperror.NewUnAuthorizedError("missing or invalid auth cookie")
 	}
 
-	token, claim, err := checkToken(tokenString)
+	tokenString := authCookie.Value
+	if tokenString == "" {
+		return apperror.NewUnAuthorizedError("empty token")
+	}
+
+	token, err := checkToken(tokenString, claim)
 	if err != nil {
-		return nil, err
+		return apperror.NewUnAuthorizedError("invalid token: " + err.Error())
 	}
 
 	if !token.Valid {
-		return nil, errors.New("invalid token")
+		return apperror.NewInValidTokenError("invalid token")
 	}
 
-	return claim, nil
+	return nil
 }
 
 // Checks Token String
-func checkToken(tokenString string) (*jwt.Token, *Claims, error) {
+func checkToken(tokenString string, claim *Claims) (*jwt.Token, error) {
 
-	var claim = &Claims{}
 	token, err := jwt.ParseWithClaims(tokenString, claim, func(t *jwt.Token) (interface{}, error) {
 		return secretKey, nil
 	})
 
-	return token, claim, err
+	return token, err
 }
+
+// func ValidateToken(_ http.ResponseWriter, r *http.Request) (*Claims, error) {
+
+// 	authCookie, err := r.Cookie("auth")
+// 	if err != nil {
+// 		return nil, apperror.NewUnAuthorizedError("missing or invalid auth cookie")
+// 	}
+
+// 	tokenString := authCookie.Value
+// 	if tokenString == "" {
+// 		return nil, apperror.NewUnAuthorizedError("empty token")
+// 	}
+
+// 	token, claim, err := checkToken(tokenString)
+// 	if err != nil {
+// 		return nil, apperror.NewUnAuthorizedError("invalid token: " + err.Error())
+// 	}
+
+// 	if !token.Valid {
+// 		return nil, apperror.NewInValidTokenError("invalid token")
+// 	}
+
+// 	return claim, nil
+// }
+
+// // Checks Token String
+// func checkToken(tokenString string) (*jwt.Token, *Claims, error) {
+
+// 	var claim = &Claims{}
+// 	token, err := jwt.ParseWithClaims(tokenString, claim, func(t *jwt.Token) (interface{}, error) {
+// 		return secretKey, nil
+// 	})
+
+// 	return token, claim, err
+// }

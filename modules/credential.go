@@ -9,6 +9,8 @@ import (
 
 func registerCredentialRoutes(appObj *app.App, repository repository.Repository) {
 
+	defer appObj.WG.Done()
+
 	credentialService := service.NewCredentialService(appObj.DB, repository)
 
 	credentialController := controller.NewCredentialController(credentialService, appObj.Log)

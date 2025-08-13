@@ -69,7 +69,7 @@ func (service *UserService) CreateUser(newUser *user.User) error {
 	}
 
 	if newUser.Credentials == nil {
-		return apperror.NewValidationError("INVALID_INPUT", "Missing credentials")
+		return apperror.NewValidationError("INVALID_INPUT", "Missing Email or Password")
 	}
 
 	uow := repository.NewUnitOfWork(service.db, false)
@@ -81,6 +81,10 @@ func (service *UserService) CreateUser(newUser *user.User) error {
 	}
 
 	newUser.Credentials.Password = string(hashedPassword)
+
+	// if err := service.repository.Add(uow, newUser); err != nil {
+	// 	return apperror.NewDatabaseError("Failed to create user: " + err.Error())
+	// }
 
 	err = uow.DB.Create(newUser).Error
 	if err != nil {

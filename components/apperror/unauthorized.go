@@ -17,6 +17,16 @@ func NewInValidTokenError(msg string) *UnauthorizedError {
 	}
 }
 
+func NewUnAuthorizedError(msg string) *UnauthorizedError {
+	return &UnauthorizedError{
+		AppError: AppError{
+			Message:    msg,
+			HTTPStatus: http.StatusUnauthorized,
+		},
+		Type: "INVALID_Cookie",
+	}
+}
+
 func NewInValidPasswordError(msg string) *UnauthorizedError {
 	return &UnauthorizedError{
 		AppError: AppError{

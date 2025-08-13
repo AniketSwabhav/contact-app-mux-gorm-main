@@ -10,6 +10,7 @@ import (
 type Repository interface {
 	Add(uow *UnitOfWork, out interface{}) error
 	GetAll(uow *UnitOfWork, out interface{}, queryProcessor ...QueryProcessor) error
+	GetRecord(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error
 	GetCount(uow *UnitOfWork, out, count interface{}, queryProcessors ...QueryProcessor) error
 	GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error
 	Save(uow *UnitOfWork, value interface{}) error
@@ -85,12 +86,6 @@ func (repository *GormRepository) GetAll(uow *UnitOfWork, out interface{}, query
 	return db.Debug().Find(out).Error
 }
 
-func (repository *GormRepository) GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error {
-	// #tenantID should be the first element in slice if "where" is appeneded in QP.
-	queryProcessors = append([]QueryProcessor{Filter("id = ?", tenantID)}, queryProcessors...)
-	return repository.GetRecord(uow, out, queryProcessors...)
-}
-
 func (repository *GormRepository) GetRecord(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error {
 	db := uow.DB
 	db, err := executeQueryProcessors(db, out, queryProcessors...)
@@ -98,6 +93,12 @@ func (repository *GormRepository) GetRecord(uow *UnitOfWork, out interface{}, qu
 		return err
 	}
 	return db.Debug().First(out).Error
+}
+
+func (repository *GormRepository) GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error {
+	// #tenantID should be the first element in slice if "where" is appeneded in QP.
+	queryProcessors = append([]QueryProcessor{Filter("id = ?", tenantID)}, queryProcessors...)
+	return repository.GetRecord(uow, out, queryProcessors...)
 }
 
 func Select(query interface{}, args ...interface{}) QueryProcessor {

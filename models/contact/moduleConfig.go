@@ -24,7 +24,7 @@ func (c *ContactModuleConfig) MigrateTables() {
 		log.NewLog().Print("Auto Migrating Contact ==> %s", err)
 	}
 
-	err = c.DB.Model(model).AddForeignKey("id", "users(id)", "CASCADE", "CASCADE").Error
+	err = c.DB.Model(model).AddForeignKey("user_id", "users(id)", "CASCADE", "CASCADE").Error
 	if err != nil {
 		log.NewLog().Print("Foreign Key Constraints Of Contact ==> %s", err)
 	}

@@ -37,6 +37,16 @@ func NewValidationError(errType, msg string) *ValidationError {
 	}
 }
 
+func NewAuthorizationError(msg string) *ValidationError {
+	return &ValidationError{
+		AppError: AppError{
+			Message:    msg,
+			HTTPStatus: http.StatusUnauthorized,
+		},
+		Type: "UNAUTHORIZED",
+	}
+}
+
 func NewHTTPError(msg string) *ValidationError {
 	return &ValidationError{
 		AppError: AppError{

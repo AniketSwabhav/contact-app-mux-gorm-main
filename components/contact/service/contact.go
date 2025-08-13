@@ -1,68 +1,130 @@
 package service
 
 import (
+	"contact_app_mux_gorm_main/components/apperror"
+	"contact_app_mux_gorm_main/models/contact"
+	"contact_app_mux_gorm_main/modules/repository"
+	"time"
+
 	"github.com/jinzhu/gorm"
+	uuid "github.com/satori/go.uuid"
 )
 
 type ContactService struct {
-	db *gorm.DB
+	db         *gorm.DB
+	repository repository.Repository
 }
 
-func NewContactService(DB *gorm.DB) *ContactService {
+func NewContactService(DB *gorm.DB, repo repository.Repository) *ContactService {
 	return &ContactService{
-		db: DB,
+		db:         DB,
+		repository: repo,
 	}
 }
 
-// func (c *ContactService) CreateContact(userID string, userContact *contact.Contact) (*contact.Contact, error) {
+func (service *ContactService) CreateContact(newContact *contact.Contact) error {
 
-// 	newContact := contact.CreateContact(userContact.FirstName, userContact.LastName, userID)
+	uow := repository.NewUnitOfWork(service.db, false)
+	defer uow.RollBack()
 
-// 	err := c.db.Create(newContact).Error
-// 	if err != nil {
-// 		return nil, apperror.NewDatabaseError("Failed to create contact")
-// 	}
+	newContact.IsActive = true
 
-// 	return newContact, nil
-// }
+	if err := service.repository.Add(uow, newContact); err != nil {
+		return apperror.NewDatabaseError("Failed to create user: " + err.Error())
+	}
 
-// func (c *ContactService) GetAllContacts(userID string) ([]contact.Contact, error) {
+	uow.Commit()
+	return nil
+}
 
-// 	allContacts := []contact.Contact{}
-// 	err := c.db.Where("user_id = ?", userID).Find(&allContacts).Error
-// 	if err != nil {
-// 		return nil, apperror.NewDatabaseError("Failed to fetch contacts")
-// 	}
+func (service *ContactService) GetAllContacts(userID uuid.UUID, allContacts *[]contact.ContactDTO, totalCount *int) error {
 
-// 	return allContacts, nil
-// }
+	limit := 5
+	offset := 0
 
-// func (c *ContactService) GetContact(userID string, contactID string) (*contact.Contact, error) {
+	uow := repository.NewUnitOfWork(service.db, false)
+	defer uow.RollBack()
 
-// 	foundCountact := contact.Contact{}
-// 	err := c.db.Where("user_id = ?", userID).Where("contact_id = ?", contactID).Find(&foundCountact).Error
-// 	if err != nil {
-// 		return nil, apperror.NewNotFoundError("Contact not found with given id")
-// 	}
+	var queryProcessors []repository.QueryProcessor
 
-// 	return &foundCountact, nil
-// }
+	queryProcessors = append(queryProcessors, repository.Filter("user_id = ?", userID))
+	queryProcessors = append(queryProcessors, repository.PreloadAssociations([]string{"ContactDetails"}))
+	queryProcessors = append(queryProcessors, repository.Paginate(limit, offset, totalCount))
 
-// func (c *ContactService) UpdateContact(userID, contactID, firstName, lastName string) (*contact.Contact, error) {
-// 	var foundContact contact.Contact
+	err := service.repository.GetAll(uow, allContacts, repository.CombineQueries(queryProcessors))
+	if err != nil {
+		return apperror.NewDatabaseError("Failed to get all contacts")
+	}
 
-// 	err := c.db.Where("user_id = ?", userID).Where("contact_id = ?", contactID).First(&foundContact).Error
-// 	if err != nil {
-// 		return nil, apperror.NewNotFoundError("Contact not found with given ID")
-// 	}
+	uow.Commit()
+	return nil
+}
 
-// 	foundContact.FirstName = firstName
-// 	foundContact.LastName = lastName
+func (service *ContactService) GetContactById(targetContact *contact.ContactDTO) error {
+	uow := repository.NewUnitOfWork(service.db, true)
+	defer uow.RollBack()
 
-// 	err = c.db.Save(&foundContact).Error
-// 	if err != nil {
-// 		return nil, apperror.NewDatabaseError("Failed to update contact")
-// 	}
+	queryProcessors := []repository.QueryProcessor{
+		repository.Filter("id = ? AND user_id = ?", targetContact.ID, targetContact.UserID),
+	}
 
-// 	return &foundContact, nil
-// }
+	err := service.repository.GetRecord(uow, targetContact, queryProcessors...)
+	if err != nil {
+		return apperror.NewNotFoundError("Contact not found")
+	}
+
+	uow.Commit()
+	return nil
+}
+
+func (service *ContactService) UpdateContactById(contactToUpdate *contact.Contact) error {
+
+	uow := repository.NewUnitOfWork(service.db, false)
+	defer uow.RollBack()
+
+	tempContact := contact.Contact{}
+
+	queryProcessors := []repository.QueryProcessor{
+		repository.Filter("id = ? AND user_id = ?", contactToUpdate.ID, contactToUpdate.UserID),
+	}
+
+	err := service.repository.GetRecord(uow, &tempContact, queryProcessors...)
+	if err != nil {
+		return err
+	}
+
+	err = service.repository.UpdateWithMap(uow, contactToUpdate, map[string]interface{}{
+		"first_name": contactToUpdate.FirstName,
+		"last_name":  contactToUpdate.LastName,
+		"is_active":  contactToUpdate.IsActive,
+	})
+
+	uow.Commit()
+	return nil
+}
+
+func (service *ContactService) DeleteContactById(contactID, userID uuid.UUID) error {
+	uow := repository.NewUnitOfWork(service.db, false)
+	defer uow.RollBack()
+
+	var contactToDelete contact.Contact
+
+	queryProcessors := []repository.QueryProcessor{
+		repository.Filter("id = ? AND user_id = ?", contactID, userID),
+	}
+
+	err := service.repository.GetRecord(uow, &contactToDelete, queryProcessors...)
+	if err != nil {
+		return apperror.NewNotFoundError("Contact not found")
+	}
+
+	err = service.repository.UpdateWithMap(uow, &contactToDelete, map[string]interface{}{
+		"DeletedAt": time.Now(),
+	}, queryProcessors...)
+	if err != nil {
+		return apperror.NewDatabaseError("Failed to delete contact")
+	}
+
+	uow.Commit()
+	return nil
+}

@@ -27,22 +27,3 @@ type ContactDTO struct {
 func (*ContactDTO) TableName() string {
 	return "contacts"
 }
-
-// func CreateContact(firstName, lastName, userId string) *Contact {
-
-// 	contact := &Contact{
-// 		FirstName: firstName,
-// 		LastName:  lastName,
-// 		IsActive:  true,
-// 		UserID:    userId,
-// 	}
-
-// 	return contact
-// }
-
-// func (c *Contact) Update(firstName, lastName string) error {
-// 	c.FirstName = firstName
-// 	c.LastName = lastName
-
-// 	return nil
-// }
