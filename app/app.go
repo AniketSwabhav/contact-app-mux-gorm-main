@@ -73,7 +73,7 @@ func (a *App) Init() {
 func (a *App) initializeRouter() {
 	a.Log.Print("Initializing " + a.Name + " Route")
 	a.Router = mux.NewRouter().StrictSlash(true)
-	a.Router = a.Router.PathPrefix("/contact-app").Subrouter()
+	a.Router = a.Router.PathPrefix("/api/v1/contact-app").Subrouter()
 }
 
 func (a *App) initializeServer() {
@@ -101,7 +101,7 @@ func (a *App) initializeServer() {
 func (a *App) StartServer() error {
 
 	a.Log.Print("Server Time: ", time.Now())
-	a.Log.Print("Server Running on port:2611")
+	a.Log.Print("Server Running on port:")
 
 	err := a.Server.ListenAndServe()
 	if err != nil {

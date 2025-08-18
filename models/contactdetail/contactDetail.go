@@ -14,12 +14,12 @@ type ContactDetail struct {
 }
 
 type ContactDetailDTO struct {
-	models.Base
+	// models.Base
 	TypeOfContact  string      `json:"Type" gorm:"not null;type:varchar(100)"`
 	ValueOfContact interface{} `json:"value" gorm:"not null;type:varchar(100)"`
 	ContactID      uuid.UUID   `json:"ContactID" gorm:"type:varchar(36);not null"`
 }
 
 func (*ContactDetailDTO) TableName() string {
-	return "contacts"
+	return "contact_details"
 }

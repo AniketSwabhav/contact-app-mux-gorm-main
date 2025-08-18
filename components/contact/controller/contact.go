@@ -28,20 +28,20 @@ func NewContactController(contactService *service.ContactService, log log.Log) *
 
 func (c *ContactController) RegisterRoutes(router *mux.Router) {
 
-	contactRouter := router.PathPrefix("/user/{userId}/contact").Subrouter()
+	contactRouter := router.PathPrefix("/user/{userId}").Subrouter()
 
 	// // POST
-	contactRouter.HandleFunc("/", c.createContact).Methods(http.MethodPost)
+	contactRouter.HandleFunc("/contact/", c.createContact).Methods(http.MethodPost)
 
 	// //Get
-	contactRouter.HandleFunc("/", c.getAllContacts).Methods(http.MethodGet)
-	contactRouter.HandleFunc("/{contactId}", c.getContactById).Methods(http.MethodGet)
+	contactRouter.HandleFunc("/contact/", c.getAllContacts).Methods(http.MethodGet)
+	contactRouter.HandleFunc("/contact/{contactId}", c.getContactById).Methods(http.MethodGet)
 
 	// //Update
-	contactRouter.HandleFunc("/{contactId}", c.updateContactById).Methods(http.MethodPut)
+	contactRouter.HandleFunc("/contact/{contactId}", c.updateContactById).Methods(http.MethodPut)
 
 	//Delete
-	contactRouter.HandleFunc("/{contactId}", c.deleteContactById).Methods(http.MethodDelete)
+	contactRouter.HandleFunc("/contact/{contactId}", c.deleteContactById).Methods(http.MethodDelete)
 
 	contactRouter.Use(util.MiddlewareContact)
 
@@ -112,7 +112,7 @@ func (c *ContactController) getAllContacts(w http.ResponseWriter, r *http.Reques
 	}
 
 	if claim.UserID != userUUID {
-		util.RespondError(w, apperror.NewAuthorizationError("You are not authorized to create a contact for this user"))
+		util.RespondError(w, apperror.NewAuthorizationError("You are not authorized to get a contact for this user"))
 		return
 	}
 

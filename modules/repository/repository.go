@@ -14,6 +14,7 @@ type Repository interface {
 	GetCount(uow *UnitOfWork, out, count interface{}, queryProcessors ...QueryProcessor) error
 	GetRecordByID(uow *UnitOfWork, tenantID uuid.UUID, out interface{}, queryProcessors ...QueryProcessor) error
 	Save(uow *UnitOfWork, value interface{}) error
+	Update(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error
 	UpdateWithMap(uow *UnitOfWork, model interface{}, value map[string]interface{}, queryProcessors ...QueryProcessor) error
 }
 
@@ -248,4 +249,13 @@ func Paginate(limit, offset int, totalCount *int) QueryProcessor {
 		}
 		return db, nil
 	}
+}
+
+func (repository *GormRepository) Update(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error {
+	db := uow.DB
+	db, err := executeQueryProcessors(db, out, queryProcessors...)
+	if err != nil {
+		return err
+	}
+	return db.Model(out).Update(out).Error
 }

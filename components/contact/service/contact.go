@@ -66,6 +66,7 @@ func (service *ContactService) GetContactById(targetContact *contact.ContactDTO)
 
 	queryProcessors := []repository.QueryProcessor{
 		repository.Filter("id = ? AND user_id = ?", targetContact.ID, targetContact.UserID),
+		repository.PreloadAssociations([]string{"ContactDetails"}),
 	}
 
 	err := service.repository.GetRecord(uow, targetContact, queryProcessors...)
