@@ -3,6 +3,7 @@ package authorization
 import (
 	"contact_app_mux_gorm_main/components/apperror"
 	"net/http"
+	"strings"
 
 	"github.com/golang-jwt/jwt"
 	uuid "github.com/satori/go.uuid"
@@ -24,14 +25,24 @@ func (c *Claims) Coder() (string, error) {
 
 func ValidateToken(_ http.ResponseWriter, r *http.Request, claim *Claims) error {
 
-	authCookie, err := r.Cookie("auth")
-	if err != nil {
-		return apperror.NewUnAuthorizedError("missing or invalid auth cookie")
+	// authCookie, err := r.Cookie("auth")
+	// if err != nil {
+	// 	return apperror.NewUnAuthorizedError("missing or invalid auth cookie")
+	// }
+
+	// tokenString := authCookie.Value
+	// if tokenString == "" {
+	// 	return apperror.NewUnAuthorizedError("empty token")
+	// }
+
+	authHeader := r.Header.Get("Authorization")
+	if authHeader == "" {
+		return apperror.NewUnAuthorizedError("missing or invalid Authorization header")
 	}
 
-	tokenString := authCookie.Value
+	tokenString := strings.TrimPrefix(authHeader, "Bearer ")
 	if tokenString == "" {
-		return apperror.NewUnAuthorizedError("empty token")
+		return apperror.NewUnAuthorizedError("empty token in Authorization header")
 	}
 
 	token, err := checkToken(tokenString, claim)

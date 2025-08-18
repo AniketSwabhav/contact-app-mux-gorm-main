@@ -113,10 +113,10 @@ func (c *UserController) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	http.SetCookie(w, &http.Cookie{
-		Name:  "auth",
-		Value: token,
-	})
+	// http.SetCookie(w, &http.Cookie{
+	// 	Name:  "auth",
+	// 	Value: token,
+	// })
 
 	util.RespondJSON(w, http.StatusAccepted, map[string]string{
 		"message": "Login successful",

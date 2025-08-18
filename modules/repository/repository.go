@@ -79,6 +79,7 @@ func (repository *GormRepository) UpdateWithMap(uow *UnitOfWork, model interface
 
 func (repository *GormRepository) GetAll(uow *UnitOfWork, out interface{}, queryProcessors ...QueryProcessor) error {
 	db := uow.DB
+	// db := uow.DB.Unscoped()
 	db, err := executeQueryProcessors(db, out, queryProcessors...)
 	if err != nil {
 		return err

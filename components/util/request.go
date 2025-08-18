@@ -33,5 +33,7 @@ func UnmarshalJSON(request *http.Request, out interface{}) error {
 		fmt.Println(out)
 		return apperror.NewInvalidJSONError("Error while unmarshaling the json body")
 	}
+
+	fmt.Println(request.Body)
 	return nil
 }

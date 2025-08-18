@@ -5,7 +5,6 @@ import (
 	"contact_app_mux_gorm_main/modules/repository"
 	"context"
 	"net/http"
-	"os"
 	"sync"
 	"time"
 
@@ -78,28 +77,31 @@ func (a *App) initializeRouter() {
 }
 
 func (a *App) initializeServer() {
-	headersOk := handlers.AllowCredentials()
+	headersOk := handlers.AllowedHeaders([]string{
+		"Content-Type", "Authorization",
+	})
 	originsOk := handlers.AllowedOrigins([]string{
-		os.Getenv("ORIGIN_ALLOWED"),
+		"http://localhost:4200",
 	})
 	methodsOk := handlers.AllowedMethods([]string{
-		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete,
+		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions,
 	})
+	credentialsOk := handlers.AllowCredentials()
 
 	a.Server = &http.Server{
 		Addr:         "localhost:2611",
 		ReadTimeout:  time.Second * 60,
 		WriteTimeout: time.Second * 60,
 		IdleTimeout:  time.Second * 60,
-		Handler:      handlers.CORS(headersOk, originsOk, methodsOk)(a.Router),
+		Handler:      handlers.CORS(originsOk, methodsOk, headersOk, credentialsOk)(a.Router),
 	}
-	a.Log.Print("Server Exposed On 4002")
+	a.Log.Print("Server Exposed On 2611")
 }
 
 func (a *App) StartServer() error {
 
 	a.Log.Print("Server Time: ", time.Now())
-	a.Log.Print("Server Running on port:4002")
+	a.Log.Print("Server Running on port:2611")
 
 	err := a.Server.ListenAndServe()
 	if err != nil {
