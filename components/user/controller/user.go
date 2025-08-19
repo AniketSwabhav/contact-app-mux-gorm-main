@@ -17,12 +17,12 @@ import (
 )
 
 type UserController struct {
-	log               log.Log
+	log               log.Logger
 	UserService       *userService.UserService
 	CredentialService *credentialService.CredentialService
 }
 
-func NewUserController(credentialService *credentialService.CredentialService, userService *userService.UserService, log log.Log) *UserController {
+func NewUserController(credentialService *credentialService.CredentialService, userService *userService.UserService, log log.Logger) *UserController {
 	return &UserController{
 		CredentialService: credentialService,
 		UserService:       userService,

@@ -15,11 +15,11 @@ import (
 )
 
 type ContactController struct {
-	log            log.Log
+	log            log.Logger
 	contactService *service.ContactService
 }
 
-func NewContactController(contactService *service.ContactService, log log.Log) *ContactController {
+func NewContactController(contactService *service.ContactService, log log.Logger) *ContactController {
 	return &ContactController{
 		log:            log,
 		contactService: contactService,

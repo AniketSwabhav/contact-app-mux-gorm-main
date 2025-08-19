@@ -8,11 +8,11 @@ import (
 )
 
 type CredentialController struct {
-	log     log.Log
+	log     log.Logger
 	service *service.CredentialService
 }
 
-func NewCredentialController(credentialService *service.CredentialService, log log.Log) *CredentialController {
+func NewCredentialController(credentialService *service.CredentialService, log log.Logger) *CredentialController {
 	return &CredentialController{
 		log:     log,
 		service: credentialService,

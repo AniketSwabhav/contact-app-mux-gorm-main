@@ -2,34 +2,46 @@ package main
 
 import (
 	"contact_app_mux_gorm_main/app"
+	"contact_app_mux_gorm_main/components/config"
 	"contact_app_mux_gorm_main/components/log"
+	"contact_app_mux_gorm_main/docs"
 	"contact_app_mux_gorm_main/modules"
 	"contact_app_mux_gorm_main/modules/repository"
+	"fmt"
 	"os"
 	"os/signal"
 	"sync"
 	"syscall"
 )
 
+var environment = "local"
+
 func main() {
 
-	log := log.NewLog()
-	db := app.NewDBConnection(*log)
+	env := config.Environment(environment)
 
+	log := log.GetLogger()
+	log.Info("Starting main in ", env, ".")
+
+	config.InitializeGlobalConfig(env)
+
+	if env == config.Local {
+		docs.SwaggerInfo.Host = fmt.Sprintf("localhost:%s", config.PORT.GetStringValue())
+	}
+
+	db := app.NewDBConnection(log)
 	if db == nil {
-		log.Print("DB connection falied")
+		log.Fatalf("Db connection failed.")
 	}
 	defer func() {
 		db.Close()
-		log.Print("DB connection closed")
+		log.Info("Db closed")
 	}()
 
 	var wg sync.WaitGroup
 	var repository = repository.NewGormRepository()
 
-	app := app.NewApp("Contact App", db, *log,
-		&wg, repository)
-
+	app := app.NewApp("Contact App", db, log, &wg, repository)
 	app.Init()
 
 	modules.RegisterModuleRoutes(app, repository)

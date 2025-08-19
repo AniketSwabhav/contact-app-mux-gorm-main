@@ -1,9 +1,11 @@
 package app
 
 import (
+	"contact_app_mux_gorm_main/components/config"
 	"contact_app_mux_gorm_main/components/log"
 	"contact_app_mux_gorm_main/modules/repository"
 	"context"
+	"fmt"
 	"net/http"
 	"sync"
 	"time"
@@ -20,7 +22,7 @@ type App struct {
 	Name   string
 	Router *mux.Router
 	DB     *gorm.DB
-	Log    log.Log
+	Log    log.Logger
 	Server *http.Server
 	WG     *sync.WaitGroup
 
@@ -35,7 +37,7 @@ type ModuleConfig interface {
 	MigrateTables()
 }
 
-func NewApp(name string, db *gorm.DB, log log.Log,
+func NewApp(name string, db *gorm.DB, log log.Logger,
 	wg *sync.WaitGroup, repo repository.Repository) *App {
 	return &App{
 		Name:       name,
@@ -46,8 +48,32 @@ func NewApp(name string, db *gorm.DB, log log.Log,
 	}
 }
 
-func NewDBConnection(log log.Log) *gorm.DB {
-	const url = "root:12345@tcp(127.0.0.1:3306)/contact_app_db?charset=utf8&parseTime=True&loc=Local"
+func (app *App) getPort() string {
+	return config.PORT.GetStringValue()
+}
+
+func getConnectionString() string {
+	conn := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true",
+		config.DBUser.GetStringValue(),
+		config.DBPass.GetStringValue(),
+		config.DBHost.GetStringValue(),
+		config.DBPort.GetStringValue(),
+		config.DBName.GetStringValue())
+
+	displayConnection := fmt.Sprintf("%s:%s@tcp(%s:%s)/%s?charset=utf8mb4&parseTime=true",
+		config.DBUser.GetStringValue(),
+		"******",
+		config.DBHost.GetStringValue(),
+		config.DBPort.GetStringValue(),
+		config.DBName.GetStringValue())
+	log.GetLogger().Info("HERE IS THE OPEN URL:", displayConnection)
+	return conn
+}
+
+func NewDBConnection(log log.Logger) *gorm.DB {
+	// const url = "root:12345@tcp(127.0.0.1:3306)/contact_app_db?charset=utf8&parseTime=True&loc=Local"
+
+	url := getConnectionString()
 
 	db, err := gorm.Open("mysql", url)
 	if err != nil {
@@ -56,7 +82,7 @@ func NewDBConnection(log log.Log) *gorm.DB {
 	}
 
 	sqlDB := db.DB()
-	sqlDB.SetMaxIdleConns(2)
+	sqlDB.SetMaxIdleConns(5)
 	sqlDB.SetMaxOpenConns(500)
 	sqlDB.SetConnMaxLifetime(3 * time.Minute)
 
@@ -87,21 +113,22 @@ func (a *App) initializeServer() {
 		http.MethodGet, http.MethodPost, http.MethodPut, http.MethodDelete, http.MethodOptions,
 	})
 	credentialsOk := handlers.AllowCredentials()
-
+	apiPort := a.getPort()
 	a.Server = &http.Server{
-		Addr:         "localhost:2611",
+		// Addr:         "localhost:2611",
+		Addr:         "0.0.0.0:" + apiPort,
 		ReadTimeout:  time.Second * 60,
 		WriteTimeout: time.Second * 60,
 		IdleTimeout:  time.Second * 60,
 		Handler:      handlers.CORS(originsOk, methodsOk, headersOk, credentialsOk)(a.Router),
 	}
-	a.Log.Print("Server Exposed On 2611")
+	a.Log.Printf("Server Exposed On %s", apiPort)
 }
 
 func (a *App) StartServer() error {
 
 	a.Log.Print("Server Time: ", time.Now())
-	a.Log.Print("Server Running on port:")
+	a.Log.Print("Server Running on port:", a.getPort())
 
 	err := a.Server.ListenAndServe()
 	if err != nil {
