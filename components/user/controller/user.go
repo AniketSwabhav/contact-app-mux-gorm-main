@@ -13,7 +13,6 @@ import (
 	"net/http"
 
 	"github.com/gorilla/mux"
-	uuid "github.com/satori/go.uuid"
 )
 
 type UserController struct {
@@ -140,16 +139,15 @@ func (c *UserController) getUserById(w http.ResponseWriter, r *http.Request) {
 
 	var targetUser = &user.UserDTO{}
 
-	vars := mux.Vars(r)
-	userIdFromURL := vars["id"]
+	parser := util.NewParser(r)
 
-	userUUID, err := uuid.FromString(userIdFromURL)
+	userIdFromURL, err := parser.GetUUID("id")
 	if err != nil {
 		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
 		return
 	}
 
-	targetUser.ID = userUUID
+	targetUser.ID = userIdFromURL
 
 	err = c.UserService.GetUserByID(targetUser)
 	if err != nil {
@@ -164,6 +162,8 @@ func (c *UserController) updateUserById(w http.ResponseWriter, r *http.Request) 
 
 	var userToUpdate = user.User{}
 
+	parser := util.NewParser(r)
+
 	err := util.UnmarshalJSON(r, &userToUpdate)
 	if err != nil {
 		fmt.Println("==============================err from UnmarshalJSON==========================")
@@ -171,16 +171,14 @@ func (c *UserController) updateUserById(w http.ResponseWriter, r *http.Request) 
 		util.RespondError(w, apperror.NewHTTPError(err.Error()))
 		return
 	}
-	vars := mux.Vars(r)
-	userIdFromURL := vars["id"]
 
-	userUUID, err := uuid.FromString(userIdFromURL)
+	userIdFromURL, err := parser.GetUUID("id")
 	if err != nil {
 		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
 		return
 	}
 
-	userToUpdate.ID = userUUID
+	userToUpdate.ID = userIdFromURL
 
 	err = c.UserService.UpdateUser(&userToUpdate)
 	if err != nil {
@@ -196,16 +194,15 @@ func (c *UserController) deleteUserById(w http.ResponseWriter, r *http.Request) 
 
 	userToDelete := user.User{}
 
-	vars := mux.Vars(r)
-	userIdFromURL := vars["id"]
+	parser := util.NewParser(r)
 
-	userUUID, err := uuid.FromString(userIdFromURL)
+	userIdFromURL, err := parser.GetUUID("id")
 	if err != nil {
 		util.RespondError(w, apperror.NewValidationError("INVALID_UUID", "Invalid user ID format"))
 		return
 	}
 
-	userToDelete.ID = userUUID
+	userToDelete.ID = userIdFromURL
 
 	err = c.UserService.Delete(&userToDelete)
 	if err != nil {

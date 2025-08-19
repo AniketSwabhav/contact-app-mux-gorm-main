@@ -1,10 +1,11 @@
 package util
 
 import (
+	"bytes"
 	"contact_app_mux_gorm_main/components/apperror"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"net/http"
 )
 
@@ -15,7 +16,9 @@ func UnmarshalJSON(request *http.Request, out interface{}) error {
 	}
 	// fmt.Println("==============================err (request.Body)==========================")
 	// fmt.Println(request.Body)
-	body, err := ioutil.ReadAll(request.Body)
+
+	// body, err := ioutil.ReadAll(request.Body)
+	body, err := io.ReadAll(request.Body)
 	if err != nil {
 		fmt.Println("==============================err ioutil.ReadAll==========================")
 		return apperror.NewDatabaseError("Error while reading JSON body")
@@ -26,14 +29,16 @@ func UnmarshalJSON(request *http.Request, out interface{}) error {
 		return apperror.NewInvalidJSONError("0 lenght json body")
 	}
 
+	request.Body = io.NopCloser(bytes.NewBuffer(body))
+
 	err = json.Unmarshal(body, out)
 	if err != nil {
 		fmt.Println("==============================err json.Unmarshal==========================")
-		fmt.Println(body)
+		fmt.Println("Body:", string(body))
 		fmt.Println(out)
 		return apperror.NewInvalidJSONError("Error while unmarshaling the json body")
 	}
 
-	fmt.Println(request.Body)
+	// fmt.Println("✅ JSON Unmarshaled Successfully:", string(body))
 	return nil
 }
